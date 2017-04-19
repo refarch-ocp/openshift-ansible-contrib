@@ -1,0 +1,29 @@
+---
+#make sure preserve_hostname set in /etc/cloud/cloud.cfg in aws ami
+#- name: debug hostname tag
+#  debug: "msg='hostname tag {{ hostvars[item].ec2_tag_Name }}'"
+#  with_items: "{{ groups.tag_provision_node | default([]) }}"
+#  when:
+#    - hostvars[item]['ec2_tag_aws_cloudformation_stack_name'] == "{{ stack_name }}"
+
+- name: set friendly hostname
+  hostname:
+     name: "{{ inventory_hostname }}"
+
+#- name: set friendly hostname
+#  hostname:
+#     name: "{{ hostvars[item].ec2_tag_Name }}"
+#  with_items: 
+#    - "{{ groups['tag_openshift_role_master'] }}"
+#    - "{{ groups['tag_openshift_role_infrarouter'] }}"
+#    - "{{ groups['tag_openshift_role_infraregistry'] }}"
+#    - "{{ groups['tag_openshift_role_infragluster'] }}"
+#    - "{{ groups['tag_openshift_role_app'] }}"
+#  when:
+#    - hostvars[item]['ec2_tag_aws_cloudformation_stack_name'] == "{{ stack_name }}"
+
+#- name: set friendly hostname
+#  command: hostnamectl set-hostname '{{ hostvars[item].ec2_tag_Name }}'
+#  with_items: "{{ ec2.instances }}"
+#  when:
+#    - hostvars[item]['ec2_tag_aws_cloudformation_stack_name'] == "{{ stack_name }}"

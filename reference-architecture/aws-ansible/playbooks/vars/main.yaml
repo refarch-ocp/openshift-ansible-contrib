@@ -13,9 +13,9 @@ byo_bastion: no
 host_up_time: 80
 
 # OpenShift variables
-openshift_registry_selector: "role=infra"
-openshift_router_selector: "role=infra"
+openshift_registry_selector: "role=infraregistry"
+openshift_router_selector: "role=infrarouter"
 openshift_master_cluster_method: native
-openshift_master_cluster_hostname: "internal-openshift-master.{{ public_hosted_zone }}"
-openshift_master_cluster_public_hostname: "openshift-master.{{ public_hosted_zone }}"
+openshift_master_cluster_hostname: "{{cluster_shortname}}.{{ public_hosted_zone }}"
+openshift_master_cluster_public_hostname: "{{cluster_shortname}}.{{ public_hosted_zone }}"
 osm_default_subdomain: "{{ wildcard_zone }}"

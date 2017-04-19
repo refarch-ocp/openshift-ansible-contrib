@@ -13,6 +13,11 @@
       name: NetworkManager
       state: latest
 
+  - name: Install katello-agent as satellite needs goferd to show errata diffs 
+    package:
+      name: katello-agent
+      state: latest
+
   - name: Start NetworkManager and network
     service:
       name: "{{ item }}"
@@ -21,6 +26,14 @@
     with_items:
     - NetworkManager
     - network
+
+  - name: Start goferd
+    service:
+      name: "{{ item }}"
+      state: restarted
+      enabled: true
+    with_items:
+    - goferd 
 
   when: not openshift.common.is_atomic | bool
 

@@ -1,0 +1,24 @@
+---
+#nmcli requires sudo yum install NetworkManager-glib NetworkManager-libnm libnm-qt-devel nm-connection-editor libsemanage-python policycoreutils-python
+#looks like NetworkManager-glib is deprecated with NetworkManager-libnm
+#got a chicken and egg problem so can't do this
+#- name: Install NetworkManager needed libs
+#  yum: name='{{item}}' state=installed
+#  with_items:
+#  - NetworkManager-glib
+#  - libnm-qt-devel.x86_64
+#  - nm-connection-editor.x86_64
+#  - libsemanage-python
+#  - policycoreutils-python
+
+- name: Add domain and default vpc nameserver
+  nmcli:
+    conn_name: 'System eth0'
+    type: ethernet
+    dns4: '{{ vpc_default_nameserver }}'
+    state: present
+
+- name: restart NetworkManager
+  service:
+    name: NetworkManager
+    state: restarted

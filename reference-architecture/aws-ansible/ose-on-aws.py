@@ -40,29 +40,37 @@ import sys
               show_default=True)
 @click.option('--vpc-id', help='Specify an already existing VPC',
               show_default=True)
+@click.option('--vpc-default-nameserver', help='VPC Default Nameserver',
+              show_default=True)
 @click.option('--private-subnet-id1', help='Specify a Private subnet within the existing VPC',
               show_default=True)
 @click.option('--private-subnet-id2', help='Specify a Private subnet within the existing VPC',
               show_default=True)
 @click.option('--private-subnet-id3', help='Specify a Private subnet within the existing VPC',
               show_default=True)
-@click.option('--public-subnet-id1', help='Specify a Public subnet within the existing VPC',
-              show_default=True)
-@click.option('--public-subnet-id2', help='Specify a Public subnet within the existing VPC',
-              show_default=True)
-@click.option('--public-subnet-id3', help='Specify a Public subnet within the existing VPC',
-              show_default=True)
 
 ### DNS options
 @click.option('--public-hosted-zone', help='hosted zone for accessing the environment')
+@click.option('--cluster-shortname', help='ocp cluster shortname')
+@click.option('--master-hostname-01', help='master hostname 01')
+@click.option('--master-hostname-02', help='master hostname 02')
+@click.option('--master-hostname-03', help='master hostname 03')
+@click.option('--app-hostname-01', help='app hostname 01')
+@click.option('--app-hostname-02', help='app hostname 02')
+@click.option('--app-hostname-03', help='app hostname 03')
+@click.option('--infrarouter-hostname-01', help='infrarouter hostname 01')
+@click.option('--infrarouter-hostname-02', help='infrarouter hostname 02')
+@click.option('--infrarouter-hostname-03', help='infrarouter hostname 03')
+@click.option('--infraregistry-hostname-01', help='infraregistry hostname 01')
+@click.option('--infraregistry-hostname-02', help='infraregistry hostname 02')
+@click.option('--infraregistry-hostname-03', help='infraregistry hostname 03')
+@click.option('--infragluster-hostname-01', help='infragluster hostname 01')
+@click.option('--infragluster-hostname-02', help='infragluster hostname 02')
+@click.option('--infragluster-hostname-03', help='infragluster hostname 03')
 @click.option('--app-dns-prefix', default='apps', help='application dns prefix',
               show_default=True)
 
 ### Subscription and Software options
-@click.option('--rhsm-user', help='Red Hat Subscription Management User')
-@click.option('--rhsm-password', help='Red Hat Subscription Management Password',
-                hide_input=True,)
-@click.option('--rhsm-pool', help='Red Hat Subscription Management Pool ID or Subscription Name')
 
 ### Miscellaneous options
 @click.option('--byo-bastion', default='no', help='skip bastion install when one exists within the cloud provider',
@@ -72,10 +80,12 @@ import sys
 @click.option('--containerized', default='False', help='Containerized installation of OpenShift',
               show_default=True)
 @click.option('--s3-bucket-name', help='Bucket name for S3 for registry')
-@click.option('--github-client-id', help='GitHub OAuth ClientID')
-@click.option('--github-client-secret', help='GitHub OAuth Client Secret')
-@click.option('--github-organization', multiple=True, help='GitHub Organization')
 @click.option('--s3-username',  help='S3 user for registry access')
+@click.option('--sat-bootstrap-rpm',  help='Satellite Bootstrap RPM URL')
+@click.option('--rhsm-activation-key',  help='OCP satellite default activation key')
+@click.option('--rhsm-org-id',  help='OCP satellite org id')
+@click.option('--rhsm-server-hostname',  help='RHSM Server Hostname')
+@click.option('--rhsm-gluster-activation-key',  help='OCP satellite gluster activation key')
 @click.option('--no-confirm', is_flag=True,
               help='Skip confirmation prompt')
 @click.help_option('--help', '-h')
@@ -94,34 +104,94 @@ def launch_refarch_env(region=None,
                     key_path=None,
                     create_vpc=None,
                     vpc_id=None,
+                    vpc_default_nameserver=None,
                     private_subnet_id1=None,
                     private_subnet_id2=None,
                     private_subnet_id3=None,
-                    public_subnet_id1=None,
-                    public_subnet_id2=None,
-                    public_subnet_id3=None,
                     byo_bastion=None,
                     bastion_sg=None,
                     public_hosted_zone=None,
+                    cluster_shortname=None,
+                    master_hostname_01=None,
+                    master_hostname_02=None,
+                    master_hostname_03=None,
+                    app_hostname_01=None,
+                    app_hostname_02=None,
+                    app_hostname_03=None,
+                    infrarouter_hostname_01=None,
+                    infrarouter_hostname_02=None,
+                    infrarouter_hostname_03=None,
+                    infraregistry_hostname_01=None,
+                    infraregistry_hostname_02=None,
+                    infraregistry_hostname_03=None,
+                    infragluster_hostname_01=None,
+                    infragluster_hostname_02=None,
+                    infragluster_hostname_03=None,
                     app_dns_prefix=None,
                     deployment_type=None,
                     openshift_sdn=None,
                     console_port=443,
-                    rhsm_user=None,
-                    rhsm_password=None,
-                    rhsm_pool=None,
                     containerized=None,
                     s3_bucket_name=None,
                     s3_username=None,
-                    github_client_id=None,
-                    github_client_secret=None,
-                    github_organization=None,
-                    verbose=0):
+                    sat_bootstrap_rpm=None,
+                    rhsm_activation_key=None,
+										rhsm_org_id=None,
+										rhsm_server_hostname=None,
+                    rhsm_gluster_activation_key=None,
+                    verbose=1):
 
   # Need to prompt for the R53 zone:
   if public_hosted_zone is None:
     public_hosted_zone = click.prompt('Hosted DNS zone for accessing the environment')
 
+  if cluster_shortname is None:
+    cluster_shortname = click.prompt('Please enter cluster name')
+
+  if master_hostname_01 is None:
+    master_hostname_01 = click.prompt('Please set master hostname 01 FQDN')
+
+  if master_hostname_02 is None:
+    master_hostname_02 = click.prompt('Please set master hostname 02 FQDN')
+
+  if master_hostname_03 is None:
+    master_hostname_03 = click.prompt('Please set master hostname 03 FQDN')
+
+  if app_hostname_01 is None:
+    app_hostname_01 = click.prompt('Please set app hostname 01 FQDN')
+
+  if app_hostname_02 is None:
+    app_hostname_02 = click.prompt('Please set app hostname 02 FQDN')
+
+  if app_hostname_03 is None:
+    app_hostname_03 = click.prompt('Please set app hostname 03 FQDN')
+
+  if infrarouter_hostname_01 is None:
+    infrarouter_hostname_01 = click.prompt('Please set infrarouter hostname 01 FQDN')
+
+  if infrarouter_hostname_02 is None:
+    infrarouter_hostname_02 = click.prompt('Please set infrarouter hostname 02 FQDN')
+
+  if infrarouter_hostname_03 is None:
+    infrarouter_hostname_03 = click.prompt('Please set infrarouter hostname 03 FQDN')
+
+  if infraregistry_hostname_01 is None:
+    infraregistry_hostname_01 = click.prompt('Please set infraregistry hostname 01 FQDN')
+
+  if infraregistry_hostname_02 is None:
+    infraregistry_hostname_02 = click.prompt('Please set infraregistry hostname 02 FQDN')
+
+  if infraregistry_hostname_03 is None:
+    infraregistry_hostname_03 = click.prompt('Please set infraregistry hostname 03 FQDN')
+
+  if infragluster_hostname_01 is None:
+    infragluster_hostname_01 = click.prompt('Please set infragluster hostname 01 FQDN')
+
+  if infragluster_hostname_02 is None:
+    infragluster_hostname_02 = click.prompt('Please set infragluster hostname 02 FQDN')
+
+  if infragluster_hostname_03 is None:
+    infragluster_hostname_03 = click.prompt('Please set infragluster hostname 03 FQDN')
 
   if s3_bucket_name is None:
     s3_bucket_name = stack_name + '-ocp-registry-' + public_hosted_zone.split('.')[0]
@@ -143,49 +213,52 @@ def launch_refarch_env(region=None,
   if keypair is None and create_key in 'yes':
     keypair = click.prompt('Specify a name for the keypair')
 
- # Fail on missing key_path
-  if key_path in '/dev/null' and create_key in 'yes':
-    key_path = click.prompt('Specify the location of the public key')
-
  # If no subnets are defined prompt:
   if create_vpc in 'no' and vpc_id is None:
     vpc_id = click.prompt('Specify the VPC ID')
+
+  if create_vpc in 'no' and vpc_default_nameserver is None:
+    vpc_default_nameserver = click.prompt('Specify the VPC Default Nameserver')
 
  # If no subnets are defined prompt:
   if create_vpc in 'no' and private_subnet_id1 is None:
     private_subnet_id1 = click.prompt('Specify the first Private subnet within the existing VPC')
     private_subnet_id2 = click.prompt('Specify the second Private subnet within the existing VPC')
     private_subnet_id3 = click.prompt('Specify the third Private subnet within the existing VPC')
-    public_subnet_id1 = click.prompt('Specify the first Public subnet within the existing VPC')
-    public_subnet_id2 = click.prompt('Specify the second Public subnet within the existing VPC')
-    public_subnet_id3 = click.prompt('Specify the third Public subnet within the existing VPC')
 
  # Prompt for Bastion SG if byo-bastion specified
-  if byo_bastion in 'yes' and bastion_sg in '/dev/null':
-    bastion_sg = click.prompt('Specify the the Bastion Security group(example: sg-4afdd24)')
+  #if byo_bastion in 'yes' and bastion_sg in '/dev/null':
+    #bastion_sg = click.prompt('Specify the the Bastion Security group(example: sg-4afdd24)')
 
   # If the user already provided values, don't bother asking again
-  if deployment_type in ['openshift-enterprise'] and rhsm_user is None:
-    rhsm_user = click.prompt("RHSM username?")
-  if deployment_type in ['openshift-enterprise'] and rhsm_password is None:
-    rhsm_password = click.prompt("RHSM password?", hide_input=True)
-  if deployment_type in ['openshift-enterprise'] and rhsm_pool is None:
-    rhsm_pool = click.prompt("RHSM Pool ID or Subscription Name?")
+  #if deployment_type in ['openshift-enterprise'] and rhsm_user is None:
+  #  rhsm_user = click.prompt("RHSM username?")
+  #if deployment_type in ['openshift-enterprise'] and rhsm_password is None:
+  #  rhsm_password = click.prompt("RHSM password?", hide_input=True)
+  #if deployment_type in ['openshift-enterprise'] and rhsm_pool is None:
+  #  rhsm_pool = click.prompt("RHSM Pool ID or Subscription Name?")
+  if deployment_type in ['openshift-enterprise'] and rhsm_activation_key is None:
+     rhsm_activation_key = click.prompt("RHSM activation_key?")
+  if deployment_type in ['openshift-enterprise'] and rhsm_org_id is None:
+     rhsm_org_id = click.prompt("RHSM org id?")
+     rhsm_server_hostname = click.prompt("RHSM server hostname?")
+  if deployment_type in ['openshift-enterprise'] and sat_bootstrap_rpm is None:
+     sat_bootstrap_rpm = click.prompt("Satellite bootstrap rpm url")
 
   # Calculate various DNS values
   wildcard_zone="%s.%s" % (app_dns_prefix, public_hosted_zone)
 
   # GitHub Authentication
-  if github_organization is None or not github_organization:
-    click.echo('A GitHub organization must be provided')
-    sys.exit(1)
-  if github_client_id is None:
-    github_client_id = click.prompt('Specify the ClientID for GitHub OAuth')
-  if github_client_secret is None:
-    github_client_secret = click.prompt('Specify the Client Secret for GitHub OAuth')
+  #if github_organization is None or not github_organization:
+  #  click.echo('A GitHub organization must be provided')
+  #  sys.exit(1)
+  #if github_client_id is None:
+  #  github_client_id = click.prompt('Specify the ClientID for GitHub OAuth')
+  #if github_client_secret is None:
+  #  github_client_secret = click.prompt('Specify the Client Secret for GitHub OAuth')
 
-  if isinstance(github_organization, str) or isinstance(github_organization, unicode):
-    github_organization = [github_organization]
+  #if isinstance(github_organization, str) or isinstance(github_organization, unicode):
+  #  github_organization = [github_organization]
 
   # Display information to the user about their choices
   click.echo('Configured values:')
@@ -201,35 +274,50 @@ def launch_refarch_env(region=None,
   click.echo('\tkey_path: %s' % key_path)
   click.echo('\tcreate_vpc: %s' % create_vpc)
   click.echo('\tvpc_id: %s' % vpc_id)
+  click.echo('\tvpc_default_nameserver: %s' % vpc_default_nameserver)
   click.echo('\tprivate_subnet_id1: %s' % private_subnet_id1)
   click.echo('\tprivate_subnet_id2: %s' % private_subnet_id2)
   click.echo('\tprivate_subnet_id3: %s' % private_subnet_id3)
-  click.echo('\tpublic_subnet_id1: %s' % public_subnet_id1)
-  click.echo('\tpublic_subnet_id2: %s' % public_subnet_id2)
-  click.echo('\tpublic_subnet_id3: %s' % public_subnet_id3)
   click.echo('\tbyo_bastion: %s' % byo_bastion)
   click.echo('\tbastion_sg: %s' % bastion_sg)
   click.echo('\tconsole port: %s' % console_port)
   click.echo('\tdeployment_type: %s' % deployment_type)
   click.echo('\topenshift_sdn: %s' % openshift_sdn)
   click.echo('\tpublic_hosted_zone: %s' % public_hosted_zone)
+  click.echo('\tcluster_shortname: %s' % cluster_shortname)
+  click.echo('\tmaster_hostname_01: %s' % master_hostname_01)
+  click.echo('\tmaster_hostname_02: %s' % master_hostname_02)
+  click.echo('\tmaster_hostname_03: %s' % master_hostname_03)
+  click.echo('\tapp_hostname_01: %s' % app_hostname_01)
+  click.echo('\tapp_hostname_02: %s' % app_hostname_02)
+  click.echo('\tapp_hostname_03: %s' % app_hostname_03)
+  click.echo('\tinfrarouter_hostname_01: %s' % infrarouter_hostname_01)
+  click.echo('\tinfrarouter_hostname_02: %s' % infrarouter_hostname_02)
+  click.echo('\tinfrarouter_hostname_03: %s' % infrarouter_hostname_03)
+  click.echo('\tinfraregistry_hostname_01: %s' % infraregistry_hostname_01)
+  click.echo('\tinfraregistry_hostname_02: %s' % infraregistry_hostname_02)
+  click.echo('\tinfraregistry_hostname_03: %s' % infraregistry_hostname_03)
+  click.echo('\tinfragluster_hostname_01: %s' % infragluster_hostname_01)
+  click.echo('\tinfragluster_hostname_02: %s' % infragluster_hostname_02)
+  click.echo('\tinfragluster_hostname_03: %s' % infragluster_hostname_03)
   click.echo('\tapp_dns_prefix: %s' % app_dns_prefix)
   click.echo('\tapps_dns: %s' % wildcard_zone)
-  click.echo('\trhsm_user: %s' % rhsm_user)
-  click.echo('\trhsm_password: *******')
-  click.echo('\trhsm_pool: %s' % rhsm_pool)
   click.echo('\tcontainerized: %s' % containerized)
   click.echo('\ts3_bucket_name: %s' % s3_bucket_name)
   click.echo('\ts3_username: %s' % s3_username)
-  click.echo('\tgithub_client_id: *******')
-  click.echo('\tgithub_client_secret: *******')
-  click.echo('\tgithub_organization: %s' % (','.join(github_organization)))
+  click.echo('\tsat_bootstrap_rpm: %s' % sat_bootstrap_rpm)
+  click.echo('\trhsm_activation_key: %s' % rhsm_activation_key)
+  click.echo('\trhsm_org_id: %s' % rhsm_org_id)
+  click.echo('\trhsm_server_hostname: %s' % rhsm_server_hostname)
+  click.echo('\trhsm_gluster_activation_key: %s' % rhsm_gluster_activation_key)
   click.echo("")
 
   if not no_confirm:
     click.confirm('Continue using these values?', abort=True)
 
   playbooks = ['playbooks/infrastructure.yaml', 'playbooks/openshift-install.yaml']
+  #playbooks = ['playbooks/infrastructure.yaml']
+  #playbooks = ['playbooks/openshift-install.yaml']
 
   for playbook in playbooks:
 
@@ -248,21 +336,19 @@ def launch_refarch_env(region=None,
     command='rm -rf .ansible/cached_facts'
     os.system(command)
 
-    command='ansible-playbook -i inventory/aws/hosts -e \'region=%s \
+    command='ansible-playbook -vvv -i inventory/aws/hosts -e \'region=%s \
+    add_node=no \
     stack_name=%s \
     ami=%s \
     keypair=%s \
     create_key=%s \
-    add_node=no \
     key_path=%s \
     create_vpc=%s \
     vpc_id=%s \
+    vpc_default_nameserver=%s \
     private_subnet_id1=%s \
     private_subnet_id2=%s \
     private_subnet_id3=%s \
-    public_subnet_id1=%s \
-    public_subnet_id2=%s \
-    public_subnet_id3=%s \
     byo_bastion=%s \
     bastion_sg=%s \
     master_instance_type=%s \
@@ -270,32 +356,45 @@ def launch_refarch_env(region=None,
     app_instance_type=%s \
     bastion_instance_type=%s \
     public_hosted_zone=%s \
+    cluster_shortname=%s \
+    master_hostname_01=%s \
+    master_hostname_02=%s \
+    master_hostname_03=%s \
+    app_hostname_01=%s \
+    app_hostname_02=%s \
+    app_hostname_03=%s \
+    infrarouter_hostname_01=%s \
+    infrarouter_hostname_02=%s \
+    infrarouter_hostname_03=%s \
+    infraregistry_hostname_01=%s \
+    infraregistry_hostname_02=%s \
+    infraregistry_hostname_03=%s \
+    infragluster_hostname_01=%s \
+    infragluster_hostname_02=%s \
+    infragluster_hostname_03=%s \
     wildcard_zone=%s \
     console_port=%s \
     deployment_type=%s \
     openshift_sdn=%s \
-    rhsm_user=%s \
-    rhsm_password=%s \
-    rhsm_pool="%s" \
     containerized=%s \
     s3_bucket_name=%s \
     s3_username=%s \
-    github_client_id=%s \
-    github_client_secret=%s \
-    github_organization=%s\' %s' % (region,
-                    stack_name,
+    sat_bootstrap_rpm=%s \
+    rhsm_activation_key=%s \
+    rhsm_org_id=%s \
+    rhsm_server_hostname=%s \
+    rhsm_gluster_activation_key=%s\' %s' % (region,
+										stack_name,
                     ami,
                     keypair,
                     create_key,
                     key_path,
                     create_vpc,
                     vpc_id,
+                    vpc_default_nameserver,
                     private_subnet_id1,
                     private_subnet_id2,
                     private_subnet_id3,
-                    public_subnet_id1,
-                    public_subnet_id2,
-                    public_subnet_id3,
                     byo_bastion,
                     bastion_sg,
                     master_instance_type,
@@ -303,20 +402,36 @@ def launch_refarch_env(region=None,
                     app_instance_type,
                     bastion_instance_type,
                     public_hosted_zone,
+                    cluster_shortname,
+                    master_hostname_01,
+                    master_hostname_02,
+                    master_hostname_03,
+                    app_hostname_01,
+                    app_hostname_02,
+                    app_hostname_03,
+                    infrarouter_hostname_01,
+                    infrarouter_hostname_02,
+                    infrarouter_hostname_03,
+                    infraregistry_hostname_01,
+                    infraregistry_hostname_02,
+                    infraregistry_hostname_03,
+                    infragluster_hostname_01,
+                    infragluster_hostname_02,
+                    infragluster_hostname_03,
                     wildcard_zone,
-                    console_port,
+									  console_port,
                     deployment_type,
                     openshift_sdn,
-                    rhsm_user,
-                    rhsm_password,
-                    rhsm_pool,
                     containerized,
                     s3_bucket_name,
                     s3_username,
-                    github_client_id,
-                    github_client_secret,
-                    str(map(lambda x: x.encode('utf8'), github_organization)).replace("'", '"').replace(' ', ''),
+                    sat_bootstrap_rpm,
+                    rhsm_activation_key,
+                    rhsm_org_id,
+                    rhsm_server_hostname,
+                    rhsm_gluster_activation_key,
                     playbook)
+         
 
     if verbose > 0:
       command += " -" + "".join(['v']*verbose)

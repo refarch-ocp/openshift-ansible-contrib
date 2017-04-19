@@ -4,15 +4,7 @@
     debug_level: 2
     openshift_debug_level: "{{ debug_level }}"
     openshift_node_debug_level: "{{ node_debug_level | default(debug_level, true) }}"
-    osm_controller_args:
-      cloud-provider:
-      - "aws"
-    osm_api_server_args:
-      cloud-provider:
-      - "aws"
     openshift_node_kubelet_args:
-      cloud-provider:
-      - "aws"
       node-labels:
       - "role={{ openshift_node_labels.role }}"
     openshift_master_debug_level: "{{ master_debug_level | default(debug_level, true) }}"
@@ -20,29 +12,27 @@
     openshift_master_api_port: "{{ console_port }}"
     openshift_master_console_port: "{{ console_port }}"
     osm_cluster_network_cidr: 172.16.0.0/16
-    openshift_registry_selector: "role=infra"
-    openshift_router_selector: "role=infra"
+    openshift_registry_selector: "role=infraregistry"
+    openshift_router_selector: "role=infrarouter"
     openshift_hosted_router_replicas: 3
     openshift_hosted_registry_replicas: 3
     openshift_master_cluster_method: native
     openshift_node_local_quota_per_fsgroup: 512Mi
-    openshift_cloudprovider_kind: aws
-    openshift_master_cluster_hostname: "internal-openshift-master.{{ public_hosted_zone }}"
-    openshift_master_cluster_public_hostname: "openshift-master.{{ public_hosted_zone }}"
+    openshift_master_cluster_hostname: "{{ cluster_shortname }}.{{ public_hosted_zone }}"
+    openshift_master_cluster_public_hostname: "{{ cluster_shortname }}.{{ public_hosted_zone }}"
     osm_default_subdomain: "{{ wildcard_zone }}"
+    openshift_hostname: "{{ inventory_hostname }}"
     openshift_master_default_subdomain: "{{osm_default_subdomain}}"
     osm_default_node_selector: "role=app"
     deployment_type: openshift-enterprise
     os_sdn_network_plugin_name: "redhat/{{ openshift_sdn }}"
     openshift_master_identity_providers:
-    - name: github
-      kind: GitHubIdentityProvider
+    - name: htpasswd_auth
+      challenge: true
       login: true
-      challenge: false
-      mapping_method: claim
-      clientID: "{{ github_client_id }}"
-      clientSecret: "{{ github_client_secret }}"
-      organizations: "{{ github_organization }}"
+      mappingMethod: claim
+      filename: /etc/origin/master/htpasswd
+      kind: HTPasswdPasswordIdentityProvider
     osm_use_cockpit: true
     containerized: false
     openshift_hosted_registry_storage_kind: object

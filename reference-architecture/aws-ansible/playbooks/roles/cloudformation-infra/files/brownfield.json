@@ -23,6 +23,13 @@
     "PublicHostedZone": {
       "Type": "String"
     },
+    "MasterHostname01": {
+      "Type": "String"
+    },
+     "Region": {
+      "Type": "String",
+      "Default": "us-west-1"
+    },
     "MasterClusterPublicHostname": {
       "Type": "String"
     },
@@ -41,21 +48,6 @@
     },
     "AmiId": {
       "Type": "AWS::EC2::Image::Id"
-    },
-    "BastionInstanceType": {
-      "Type": "String",
-      "Default": "t2.micro"
-    },
-    "BastionRootVolSize": {
-      "Type": "String",
-      "Default": "30"
-    },
-    "BastionRootVolType": {
-      "Type": "String",
-      "Default": "gp2"
-    },
-    "BastionUserData": {
-      "Type": "String"
     },
     "MasterRootVolSize": {
       "Type": "String",
@@ -96,7 +88,31 @@
       "Type": "String",
       "Default": "t2.medium"
     },
+    "InfraRouterInstanceType": {
+      "Type": "String",
+      "Default": "t2.medium"
+    },
+    "InfraRegistryInstanceType": {
+      "Type": "String",
+      "Default": "t2.medium"
+    },
+    "InfraGlusterInstanceType": {
+      "Type": "String",
+      "Default": "t2.medium"
+    },
     "InfraRootVolSize": {
+      "Type": "String",
+      "Default": "30"
+    },
+    "InfraRouterRootVolSize": {
+      "Type": "String",
+      "Default": "30"
+    },
+    "InfraRegistryRootVolSize": {
+      "Type": "String",
+      "Default": "30"
+    },
+    "InfraGlusterRootVolSize": {
       "Type": "String",
       "Default": "30"
     },
@@ -104,11 +120,55 @@
       "Type": "String",
       "Default": "25"
     },
+    "InfraRouterDockerVolSize": {
+      "Type": "String",
+      "Default": "25"
+    },
+    "InfraRegistryDockerVolSize": {
+      "Type": "String",
+      "Default": "25"
+    },
+    "InfraGlusterDockerVolSize": {
+      "Type": "String",
+      "Default": "25"
+    },
+    "InfraGlusterDataVolSize": {
+      "Type": "String",
+      "Default": "500"
+    },
     "InfraDockerVolType": {
       "Type": "String",
       "Default": "gp2"
     },
+    "InfraRouterDockerVolType": {
+      "Type": "String",
+      "Default": "gp2"
+    },
+    "InfraRegistryDockerVolType": {
+      "Type": "String",
+      "Default": "gp2"
+    },
+    "InfraGlusterDockerVolType": {
+      "Type": "String",
+      "Default": "gp2"
+    },
+    "InfraGlusterDataVolType": {
+      "Type": "String",
+      "Default": "gp2"
+    },
     "InfraRootVolType": {
+      "Type": "String",
+      "Default": "gp2"
+    },
+    "InfraRouterRootVolType": {
+      "Type": "String",
+      "Default": "gp2"
+    },
+    "InfraRegistryRootVolType": {
+      "Type": "String",
+      "Default": "gp2"
+    },
+    "InfraGlusterRootVolType": {
       "Type": "String",
       "Default": "gp2"
     },
@@ -146,15 +206,6 @@
     "Vpc": {
       "Type": "String"
     },
-    "PublicSubnet1": {
-      "Type": "String"
-    },
-    "PublicSubnet2": {
-      "Type": "String"
-    },
-    "PublicSubnet3": {
-      "Type": "String"
-    },
     "PrivateSubnet1": {
       "Type": "String"
     },
@@ -166,22 +217,6 @@
     }
   },
   "Resources": {
-    "BastionSg": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "GroupDescription": "bastion-sg",
-        "VpcId": { "Ref": "Vpc" },
-        "Tags": [ {"Key": "Name", "Value": "bastion_sg"} ],
-        "SecurityGroupIngress": [
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "22",
-            "ToPort": "22",
-            "CidrIp": "0.0.0.0/0"
-          }
-        ]
-      }
-    },
     "EtcdSG": {
       "Type": "AWS::EC2::SecurityGroup",
       "Properties": {
@@ -207,22 +242,6 @@
             "IpProtocol": "tcp",
             "FromPort": "443",
             "ToPort": "443",
-            "CidrIp": "0.0.0.0/0"
-          }
-        ]
-      }
-    },
-    "MasterExtElbSG": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "GroupDescription": "Master External Load Balancer",
-        "VpcId": { "Ref": "Vpc" },
-        "Tags": [ {"Key": "Name", "Value": "ose_elb_master_sg"} ],
-        "SecurityGroupIngress": [
-          {
-            "IpProtocol": "tcp",
-            "FromPort": { "Ref": "MasterApiPort" },
-            "ToPort": { "Ref": "MasterApiPort" },
             "CidrIp": "0.0.0.0/0"
           }
         ]
@@ -278,16 +297,6 @@
         "FromPort": "443",
         "ToPort": "443",
         "DestinationSecurityGroupId": { "Fn::GetAtt": [ "InfraSG", "GroupId" ] }
-      }
-    },
-    "MasterExtElbEgressAPI": {
-      "Type": "AWS::EC2::SecurityGroupEgress",
-      "Properties":{
-        "GroupId": { "Fn::GetAtt": [ "MasterExtElbSG", "GroupId" ] },
-        "IpProtocol": "tcp",
-        "FromPort": { "Ref": "MasterApiPort" },
-        "ToPort": { "Ref": "MasterApiPort" },
-        "DestinationSecurityGroupId": { "Fn::GetAtt": [ "MasterSG", "GroupId" ] }
       }
     },
     "MasterIntElbEgressAPI": {
@@ -360,6 +369,16 @@
         "SourceSecurityGroupId": { "Fn::GetAtt": [ "NodeSG", "GroupId" ] }
       }
     },
+    "NodeIngressNodeSSHTCP": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties":{
+        "GroupId": { "Fn::GetAtt": [ "NodeSG", "GroupId" ] },
+        "IpProtocol": "tcp",
+        "FromPort": "22",
+        "ToPort": "22",
+        "CidrIp": "10.121.112.0/20"
+      }
+    },
     "NodeIngressNodeVXLAN": {
       "Type": "AWS::EC2::SecurityGroupIngress",
       "Properties":{
@@ -370,16 +389,6 @@
         "SourceSecurityGroupId": { "Fn::GetAtt": [ "NodeSG", "GroupId" ] }
       }
     },
-    "NodeIngressSsh": {
-      "Type": "AWS::EC2::SecurityGroupIngress",
-      "Properties":{
-        "GroupId": { "Fn::GetAtt": [ "NodeSG", "GroupId" ] },
-        "IpProtocol": "tcp",
-        "FromPort": "22",
-        "ToPort": "22",
-        "SourceSecurityGroupId": { "Fn::GetAtt": [ "BastionSg", "GroupId" ] }
-      }
-    },
     "MasterIngressIntLB": {
       "Type": "AWS::EC2::SecurityGroupIngress",
       "Properties":{
@@ -388,16 +397,6 @@
         "FromPort": { "Ref": "MasterApiPort" },
         "ToPort": { "Ref": "MasterApiPort" },
         "SourceSecurityGroupId": { "Fn::GetAtt": [ "MasterIntElbSG", "GroupId" ] }
-      }
-    },
-    "MasterIngressExtLB": {
-      "Type": "AWS::EC2::SecurityGroupIngress",
-      "Properties":{
-        "GroupId": { "Fn::GetAtt": [ "MasterSG", "GroupId" ] },
-        "IpProtocol": "tcp",
-        "FromPort": { "Ref": "MasterApiPort" },
-        "ToPort": { "Ref": "MasterApiPort" },
-        "SourceSecurityGroupId": { "Fn::GetAtt": [ "MasterExtElbSG", "GroupId" ] }
       }
     },
     "MasterIngressNodesDNSUDP": {
@@ -494,7 +493,6 @@
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
       "Properties": {
         "CrossZone": "true",
-        "ConnectionSettings": {"IdleTimeout" : 300},
         "Tags": [ {"Key": "Name", "Value": "ose_internal_master_elb"} ],
         "HealthCheck": {
           "HealthyThreshold" : "2",
@@ -515,8 +513,7 @@
         "SecurityGroups": [ { "Ref": "MasterIntElbSG" } ],
         "Subnets": [
           {"Ref": "PrivateSubnet1"},
-          {"Ref": "PrivateSubnet2"},
-          {"Ref": "PrivateSubnet3"}
+          {"Ref": "PrivateSubnet2"}
             ],
         "Instances": [
           {"Ref": "Master01"},
@@ -524,40 +521,6 @@
           {"Ref": "Master03"}
             ]
         }
-    },
-    "MasterExtElb": {
-      "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
-      "Properties": {
-        "CrossZone": "true",
-        "ConnectionSettings": {"IdleTimeout" : 300},
-        "Tags": [ {"Key": "Name", "Value": "ose_master_elb"} ],
-        "HealthCheck": {
-          "HealthyThreshold" : "2",
-          "Interval" : "5",
-          "Target" : { "Ref": "MasterHealthTarget" },
-          "Timeout" : "2",
-          "UnhealthyThreshold" : "2"
-        },
-        "Listeners":[
-          {
-            "InstancePort": { "Ref" : "MasterApiPort" },
-            "InstanceProtocol": "TCP",
-            "LoadBalancerPort": { "Ref" : "MasterApiPort" },
-            "Protocol": "TCP"
-          }
-        ],
-        "SecurityGroups": [{"Ref": "MasterExtElbSG"}],
-        "Subnets": [
-          {"Ref": "PublicSubnet1"},
-          {"Ref": "PublicSubnet2"},
-          {"Ref": "PublicSubnet3"}
-            ],
-        "Instances": [
-          {"Ref": "Master01"},
-          {"Ref": "Master02"},
-          {"Ref": "Master03"}
-            ]
-      }
     },
     "InfraElb": {
       "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
@@ -587,14 +550,13 @@
         ],
         "SecurityGroups": [ { "Ref": "InfraElbSG" } ],
         "Subnets": [
-          {"Ref": "PublicSubnet1"},
-          {"Ref": "PublicSubnet2"},
-          {"Ref": "PublicSubnet3"}
+          {"Ref": "PrivateSubnet1"},
+          {"Ref": "PrivateSubnet2"}
         	],
         "Instances": [
-          {"Ref": "InfraNode01"},
-          {"Ref": "InfraNode02"},
-          {"Ref": "InfraNode03"}
+          {"Ref": "InfraRouterNode01"},
+          {"Ref": "InfraRouterNode02"},
+          {"Ref": "InfraRouterNode03"}
             ]
       }
     },
@@ -683,28 +645,32 @@
        "BucketName": { "Ref": "S3BucketName"}
                    }
      },
+   "DNS": {
+   "Type": "AWS::Route53::HostedZone",
+   "Properties": {
+    "HostedZoneConfig": {
+      "Comment": "private hosted zone"
+    },
+    "Name": { "Ref": "Route53HostedZone" },
+    "VPCs": [{
+      "VPCId": { "Ref": "Vpc" },
+      "VPCRegion": {"Ref" : "Region" }
+    }]
+  }
+},
     "Route53Records": {
       "Type": "AWS::Route53::RecordSetGroup",
       "DependsOn": [
+        "DNS",
         "InfraElb",
         "MasterIntElb",
-        "Bastion",
         "Master01",
         "Master02",
-        "Master03",
-        "MasterExtElb"
+        "Master03"
       ],
       "Properties": {
         "HostedZoneName": { "Ref": "Route53HostedZone" },
         "RecordSets": [
-          {
-            "Name":  { "Ref": "MasterClusterPublicHostname" },
-            "Type": "A",
-            "AliasTarget": {
-                "HostedZoneId": { "Fn::GetAtt" : ["MasterExtElb", "CanonicalHostedZoneNameID"] },
-                "DNSName": { "Fn::GetAtt" : ["MasterExtElb","CanonicalHostedZoneName"] }
-            }
-          },
           {
             "Name": { "Ref": "MasterClusterHostname" },
             "Type": "A",
@@ -722,102 +688,98 @@
             }
           },
           {
-            "Name": {"Fn::Join": [".", ["bastion",{"Ref": "Route53HostedZone"}]]},
-            "Type": "A",
-			"TTL": "300",
-		    "ResourceRecords": [{ "Fn::GetAtt" : ["Bastion", "PublicIp"] }]
-          },
-          {
-            "Name": {"Fn::Join": [".", ["ose-master01",{"Ref": "Route53HostedZone"}]]},
+            "Name": { "Ref": "MasterHostname01" },
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["Master01", "PrivateIp"] }]
           },
           {
-            "Name": {"Fn::Join": [".", ["ose-master02",{"Ref": "Route53HostedZone"}]]},
+            "Name":  "master02-c01.ocp.dev.frb.aws",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["Master02", "PrivateIp"] }]
           },
           {
-            "Name": {"Fn::Join": [".", ["ose-master03",{"Ref": "Route53HostedZone"}]]},
+            "Name":  "master03-c01.ocp.dev.frb.aws",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["Master03", "PrivateIp"] }]
           },
           {
-            "Name": {"Fn::Join": [".", ["ose-infra-node01",{"Ref": "Route53HostedZone"}]]},
+            "Name":  "infrarouter01-c01.ocp.dev.frb.aws",
             "Type": "A",
 			"TTL": "300",
-		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraNode01", "PrivateIp"] }]
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRouterNode01", "PrivateIp"] }]
           },
           {
-            "Name": {"Fn::Join": [".", ["ose-infra-node02",{"Ref": "Route53HostedZone"}]]},
+            "Name":  "infrarouter02-c01.ocp.dev.frb.aws",
             "Type": "A",
 			"TTL": "300",
-		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraNode02", "PrivateIp"] }]
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRouterNode02", "PrivateIp"] }]
           },
           {
-            "Name": {"Fn::Join": [".", ["ose-infra-node03",{"Ref": "Route53HostedZone"}]]},
+            "Name":  "infrarouter03-c01.ocp.dev.frb.aws",
             "Type": "A",
 			"TTL": "300",
-		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraNode03", "PrivateIp"] }]
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRouterNode03", "PrivateIp"] }]
           },
           {
-            "Name": {"Fn::Join": [".", ["ose-app-node01",{"Ref": "Route53HostedZone"}]]},
+            "Name":  "infraregistry01-c01.ocp.dev.frb.aws",
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRegistryNode01", "PrivateIp"] }]
+          },
+          {
+            "Name":  "infraregistry02-c01.ocp.dev.frb.aws",
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRegistryNode02", "PrivateIp"] }]
+          },
+          {
+            "Name":  "infraregistry03-c01.ocp.dev.frb.aws",
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRegistryNode03", "PrivateIp"] }]
+          },
+          {
+            "Name":  "infragluster01-c01.ocp.dev.frb.aws",
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraGlusterNode01", "PrivateIp"] }]
+          },
+          {
+            "Name":  "infragluster02-c01.ocp.dev.frb.aws",
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraGlusterNode02", "PrivateIp"] }]
+          },
+          {
+            "Name":  "infragluster03-c01.ocp.dev.frb.aws",
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraGlusterNode03", "PrivateIp"] }]
+          },
+          {
+            "Name":  "app01-c01.ocp.dev.frb.aws",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["AppNode01", "PrivateIp"] }]
           },
           {
-            "Name": {"Fn::Join": [".", ["ose-app-node02",{"Ref": "Route53HostedZone"}]]},
+            "Name":  "app02-c01.ocp.dev.frb.aws",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["AppNode02", "PrivateIp"] }]
+          },
+          {
+            "Name":  "app03-c01.ocp.dev.frb.aws",
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["AppNode03", "PrivateIp"] }]
           }
         ]
       }
     },
-    "Bastion" : {
-       "Type" : "AWS::EC2::Instance",
-       "Properties" : {
-          "ImageId" : {"Ref": "AmiId"},
-          "UserData": {"Ref": "BastionUserData"},
-          "KeyName" : {"Ref": "KeyName"},
-	      "InstanceType": {"Ref": "BastionInstanceType"},
-		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["BastionSg", "GroupId"] }],
-          "SubnetId" : {"Ref": "PublicSubnet1"},
-          "Tags": [
-            { "Key": "Name",
-              "Value": {"Fn::Join": [".", ["bastion",{"Ref": "Route53HostedZone"}]]}
-            }
-          ],
-          "BlockDeviceMappings" : [
-			          {
-            "DeviceName": "/dev/sda1",
-            "Ebs": {
-              "DeleteOnTermination": "true",
-              "VolumeSize": {"Ref": "BastionRootVolSize"},
-              "VolumeType": {"Ref": "BastionRootVolType"}
-                   }
-            }
-          ]
-       }
-    },
-    "BastionEip" : {
-       "Type" : "AWS::EC2::EIP",
-        "Properties" : {
-        "Domain" : "vpc"
-           }
-       },
-    "BastionEipAssoc" : {
-      "DependsOn": ["Bastion"],
-      "Type" : "AWS::EC2::EIPAssociation",
-      "Properties" : {
-        "InstanceId" : {"Ref" : "Bastion"},
-        "AllocationId" : { "Fn::GetAtt" : ["BastionEip", "AllocationId"]}
-        }
-       },
     "Master01" : {
        "Type" : "AWS::EC2::Instance",
        "Properties" : {
@@ -830,7 +792,7 @@
           "IamInstanceProfile": { "Ref": "MasterInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": {"Fn::Join": [".", ["ose-master01",{"Ref": "PublicHostedZone"}]]}
+              "Value": "master01-c01.ocp.dev.frb.aws"
             },
             { "Key": "openshift-role",
               "Value": "master"
@@ -884,7 +846,7 @@
           "IamInstanceProfile": { "Ref": "MasterInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": {"Fn::Join": [".", ["ose-master02",{"Ref": "PublicHostedZone"}]]}
+              "Value": "master02-c01.ocp.dev.frb.aws"
             },
             { "Key": "openshift-role",
               "Value": "master"
@@ -938,7 +900,7 @@
           "IamInstanceProfile": { "Ref": "MasterInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": {"Fn::Join": [".", ["ose-master03",{"Ref": "PublicHostedZone"}]]}
+              "Value": "master03-c01.ocp.dev.frb.aws"
             },
             { "Key": "openshift-role",
               "Value": "master"
@@ -980,22 +942,22 @@
          ]
      }
    },
-    "InfraNode01" : {
+    "InfraRouterNode01" : {
        "Type" : "AWS::EC2::Instance",
        "Properties" : {
           "ImageId" : {"Ref": "AmiId"},
           "UserData": {"Ref": "NodeUserData"},
           "KeyName" : {"Ref": "KeyName"},
-	      "InstanceType": {"Ref": "InfraInstanceType"},
+	      "InstanceType": {"Ref": "InfraRouterInstanceType"},
 		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
           "SubnetId" : {"Ref": "PrivateSubnet1"},
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": {"Fn::Join": [".", ["ose-infra-node01",{"Ref": "PublicHostedZone"}]]}
+              "Value": "infrarouter01-c01.ocp.dev.frb.aws"
             },
             { "Key": "openshift-role",
-              "Value": "infra"
+              "Value": "infrarouter"
             }
           ],
           "BlockDeviceMappings" : [
@@ -1026,22 +988,22 @@
          ]
      }
     },
-    "InfraNode02" : {
+    "InfraRouterNode02" : {
        "Type" : "AWS::EC2::Instance",
        "Properties" : {
           "ImageId" : {"Ref": "AmiId"},
           "UserData": {"Ref": "NodeUserData"},
           "KeyName" : {"Ref": "KeyName"},
-	      "InstanceType": {"Ref": "InfraInstanceType"},
+	      "InstanceType": {"Ref": "InfraRouterInstanceType"},
 		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
           "SubnetId" : {"Ref": "PrivateSubnet2"},
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": {"Fn::Join": [".", ["ose-infra-node02",{"Ref": "PublicHostedZone"}]]}
+              "Value": "infrarouter02-c01.ocp.dev.frb.aws"
             },
             { "Key": "openshift-role",
-              "Value": "infra"
+              "Value": "infrarouter"
             }
           ],
           "BlockDeviceMappings" : [
@@ -1071,23 +1033,23 @@
           }
          ]
      }
- },
-    "InfraNode03" : {
+    },
+    "InfraRouterNode03" : {
        "Type" : "AWS::EC2::Instance",
        "Properties" : {
           "ImageId" : {"Ref": "AmiId"},
           "UserData": {"Ref": "NodeUserData"},
           "KeyName" : {"Ref": "KeyName"},
-	  "InstanceType": {"Ref": "InfraInstanceType"},
-	  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
+	      "InstanceType": {"Ref": "InfraRouterInstanceType"},
+		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
           "SubnetId" : {"Ref": "PrivateSubnet3"},
-	  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
+		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": {"Fn::Join": [".", ["ose-infra-node03",{"Ref": "PublicHostedZone"}]]}
+              "Value": "infrarouter03-c01.ocp.dev.frb.aws"
             },
             { "Key": "openshift-role",
-              "Value": "infra"
+              "Value": "infrarouter"
             }
           ],
           "BlockDeviceMappings" : [
@@ -1117,7 +1079,307 @@
           }
          ]
      }
- },
+    },
+    "InfraRegistryNode01" : {
+       "Type" : "AWS::EC2::Instance",
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "NodeUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+	      "InstanceType": {"Ref": "InfraRegistryInstanceType"},
+		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet1"},
+		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": "infraregistry01-c01.ocp.dev.frb.aws"
+            },
+            { "Key": "openshift-role",
+              "Value": "infraregistry"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeRootVolSize"},
+              "VolumeType": {"Ref": "NodeRootVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeDockerVolSize"},
+              "VolumeType": {"Ref": "NodeDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeEmptyVolSize"},
+              "VolumeType": {"Ref": "NodeEmptyVolType"}
+            }
+          }
+         ]
+     }
+    },
+    "InfraRegistryNode02" : {
+       "Type" : "AWS::EC2::Instance",
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "NodeUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+	      "InstanceType": {"Ref": "InfraRegistryInstanceType"},
+		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet2"},
+		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": "infraregistry02-c01.ocp.dev.frb.aws"
+            },
+            { "Key": "openshift-role",
+              "Value": "infraregistry"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeRootVolSize"},
+              "VolumeType": {"Ref": "NodeRootVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeDockerVolSize"},
+              "VolumeType": {"Ref": "NodeDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeEmptyVolSize"},
+              "VolumeType": {"Ref": "NodeEmptyVolType"}
+            }
+          }
+         ]
+     }
+    },
+    "InfraRegistryNode03" : {
+       "Type" : "AWS::EC2::Instance",
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "NodeUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+	      "InstanceType": {"Ref": "InfraRegistryInstanceType"},
+		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet3"},
+		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": "infraregistry03-c01.ocp.dev.frb.aws"
+            },
+            { "Key": "openshift-role",
+              "Value": "infraregistry"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeRootVolSize"},
+              "VolumeType": {"Ref": "NodeRootVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeDockerVolSize"},
+              "VolumeType": {"Ref": "NodeDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeEmptyVolSize"},
+              "VolumeType": {"Ref": "NodeEmptyVolType"}
+            }
+          }
+         ]
+     }
+    },
+    "InfraGlusterNode01" : {
+       "Type" : "AWS::EC2::Instance",
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "NodeUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+	      "InstanceType": {"Ref": "InfraGlusterInstanceType"},
+		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet1"},
+		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": "infragluster01-c01.ocp.dev.frb.aws"
+            },
+            { "Key": "openshift-role",
+              "Value": "infragluster"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeRootVolSize"},
+              "VolumeType": {"Ref": "NodeRootVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeDockerVolSize"},
+              "VolumeType": {"Ref": "NodeDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeEmptyVolSize"},
+              "VolumeType": {"Ref": "NodeEmptyVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdd",
+            "Ebs": {
+              "DeleteOnTermination": "false",
+              "VolumeSize": {"Ref": "InfraGlusterDataVolSize"},
+              "VolumeType": {"Ref": "InfraGlusterDataVolType"}
+            }
+          }
+         ]
+     }
+    },
+    "InfraGlusterNode02" : {
+       "Type" : "AWS::EC2::Instance",
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "NodeUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+	      "InstanceType": {"Ref": "InfraGlusterInstanceType"},
+		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet1"},
+		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": "infragluster02-c01.ocp.dev.frb.aws"
+            },
+            { "Key": "openshift-role",
+              "Value": "infragluster"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeRootVolSize"},
+              "VolumeType": {"Ref": "NodeRootVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeDockerVolSize"},
+              "VolumeType": {"Ref": "NodeDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeEmptyVolSize"},
+              "VolumeType": {"Ref": "NodeEmptyVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdd",
+            "Ebs": {
+              "DeleteOnTermination": "false",
+              "VolumeSize": {"Ref": "InfraGlusterDataVolSize"},
+              "VolumeType": {"Ref": "InfraGlusterDataVolType"}
+          }
+         }
+         ]
+     }
+    },
+    "InfraGlusterNode03" : {
+       "Type" : "AWS::EC2::Instance",
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "NodeUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+	      "InstanceType": {"Ref": "InfraGlusterInstanceType"},
+		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet1"},
+		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": "infragluster03-c01.ocp.dev.frb.aws"
+            },
+            { "Key": "openshift-role",
+              "Value": "infragluster"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeRootVolSize"},
+              "VolumeType": {"Ref": "NodeRootVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeDockerVolSize"},
+              "VolumeType": {"Ref": "NodeDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeEmptyVolSize"},
+              "VolumeType": {"Ref": "NodeEmptyVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdd",
+            "Ebs": {
+              "DeleteOnTermination": "false",
+              "VolumeSize": {"Ref": "InfraGlusterDataVolSize"},
+              "VolumeType": {"Ref": "InfraGlusterDataVolType"}
+          }
+         }
+         ]
+     }
+    },
     "AppNode01" : {
        "Type" : "AWS::EC2::Instance",
        "Properties" : {
@@ -1130,7 +1392,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": {"Fn::Join": [".", ["ose-app-node01",{"Ref": "PublicHostedZone"}]]}
+              "Value": "app01-c01.ocp.dev.frb.aws"
             },
             { "Key": "openshift-role",
               "Value": "app"
@@ -1176,7 +1438,53 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": {"Fn::Join": [".", ["ose-app-node02",{"Ref": "PublicHostedZone"}]]}
+              "Value": "app02-c01.ocp.dev.frb.aws"
+            },
+            { "Key": "openshift-role",
+              "Value": "app"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeRootVolSize"},
+              "VolumeType": {"Ref": "NodeRootVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeDockerVolSize"},
+              "VolumeType": {"Ref": "NodeDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeEmptyVolSize"},
+              "VolumeType": {"Ref": "NodeEmptyVolType"}
+            }
+          }
+         ]
+     }
+   },
+    "AppNode03" : {
+       "Type" : "AWS::EC2::Instance",
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "NodeUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+	      "InstanceType": {"Ref": "AppNodeInstanceType"},
+		  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet3"},
+		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": "app03-c01.ocp.dev.frb.aws"
             },
             { "Key": "openshift-role",
               "Value": "app"

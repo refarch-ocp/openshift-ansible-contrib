@@ -4,6 +4,8 @@
   become: yes
   serial: 1
   roles:
+  - set-hostname
+  - domain-nameserver-add
   - rhsm-subscription
 
 - hosts: cluster_hosts

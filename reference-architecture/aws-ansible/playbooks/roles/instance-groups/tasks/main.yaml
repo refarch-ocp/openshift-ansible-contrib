@@ -15,7 +15,7 @@
       KubernetesCluster: "{{ stack_name }}"
   with_items: "{{ groups['tag_openshift_role_master'] }}"
   when:
-    - hostvars[item]['ec2_tag_KubernetesCluster'] == "{{ stack_name }}"
+    - hostvars[item]['ec2_tag_aws_cloudformation_stack_name'] == "{{ stack_name }}"
 
 - name: Add a master to the single master group
   add_host:
@@ -26,16 +26,38 @@
       KubernetesCluster: "{{ stack_name }}"
   with_items: "{{ groups['masters'].0 }}"
 
-- name: Add infra instances to host group
+- name: Add infrarouter instances to host group
   add_host:
     name: "{{ hostvars[item].ec2_tag_Name }}"
     groups: nodes, cluster_hosts, schedulable_nodes
     openshift_node_labels:
-      role: infra
+      role: infrarouter
       KubernetesCluster: "{{ stack_name }}"
-  with_items: "{{ groups['tag_openshift_role_infra'] }}"
+  with_items: "{{ groups['tag_openshift_role_infrarouter'] }}"
   when:
-    - hostvars[item]['ec2_tag_KubernetesCluster'] == "{{ stack_name }}"
+    - hostvars[item]['ec2_tag_aws_cloudformation_stack_name'] == "{{ stack_name }}"
+
+- name: Add infraregistry instances to host group
+  add_host:
+    name: "{{ hostvars[item].ec2_tag_Name }}"
+    groups: nodes, cluster_hosts, schedulable_nodes
+    openshift_node_labels:
+      role: infraregistry
+      KubernetesCluster: "{{ stack_name }}"
+  with_items: "{{ groups['tag_openshift_role_infraregistry'] }}"
+  when:
+    - hostvars[item]['ec2_tag_aws_cloudformation_stack_name'] == "{{ stack_name }}"
+
+- name: Add infragluster instances to host group
+  add_host:
+    name: "{{ hostvars[item].ec2_tag_Name }}"
+    groups: nodes, cluster_hosts, schedulable_nodes, gluster_nodes
+    openshift_node_labels:
+      role: infragluster
+      KubernetesCluster: "{{ stack_name }}"
+  with_items: "{{ groups['tag_openshift_role_infragluster'] }}"
+  when:
+    - hostvars[item]['ec2_tag_aws_cloudformation_stack_name'] == "{{ stack_name }}"
 
 - name: Add app instances to host group
   add_host:
@@ -46,7 +68,7 @@
       KubernetesCluster: "{{ stack_name }}"
   with_items: "{{ groups['tag_openshift_role_app'] }}"
   when:
-    - hostvars[item]['ec2_tag_KubernetesCluster'] == "{{ stack_name }}"
+    - hostvars[item]['ec2_tag_aws_cloudformation_stack_name'] == "{{ stack_name }}"
 
 - name: Add new node instances to host group
   add_host:

@@ -9,6 +9,7 @@
         - rhel-7-server-rpms
         - rhel-7-server-extras-rpms
         - rhel-7-server-ose-3.4-rpms
+        - rhel-7-server-satellite-tools-6.2-rpms
 
     - name: check to see if rhui exists
       stat:

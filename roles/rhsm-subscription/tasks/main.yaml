@@ -1,5 +1,6 @@
 ---
 - block:
+
     - name: Check for sat config file
       stat: path=/etc/rhsm/rhsm.conf.kat-backup
       register: sat_cfg
@@ -14,20 +15,23 @@
       when: rhsm_user is defined and rhsm_user and sat_cfg.stat.exists == True
       ignore_errors: yes
 
-    - name: Is the host already registered?
-      command: "subscription-manager status"
-      register: subscribed
-      changed_when: no
-      ignore_errors: yes
+    - name: Satellite bootstrap pre
+      get_url: 
+         url: http://{{rhsm_server_hostname}}/pub/{{sat_bootstrap_rpm}}
+         dest: /tmp/{{sat_bootstrap_rpm}}
+      when: sat_bootstrap_rpm is defined and sat_bootstrap_rpm 
+
+    - name: Satellite bootstrap post
+      command: rpm -ivh /tmp/{{sat_bootstrap_rpm}}
+      when: sat_bootstrap_rpm is defined and sat_bootstrap_rpm 
 
     - name: Register host via Activation key
       redhat_subscription:
         activationkey: "{{ rhsm_activation_key }}"
         org_id: "{{ rhsm_org_id }}"
+        server_hostname: "{{ rhsm_server_hostname }}"
         state: present
-        pool: "{{ rhsm_pool }}"
       when: rhsm_activation_key is defined and rhsm_activation_key
-      register: register_key_result
       ignore_errors: yes
 
     - name: Register host
@@ -36,6 +40,6 @@
         password: "{{ rhsm_password }}"
         state: present
         pool: "{{ rhsm_pool }}"
-      when: "'Current' not in subscribed.stdout and rhsm_user is defined and rhsm_user"
+      when: rhsm_user is defined and rhsm_user
 
   when: ansible_distribution == "RedHat"
