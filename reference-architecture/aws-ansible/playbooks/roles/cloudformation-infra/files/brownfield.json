@@ -252,7 +252,15 @@
       "Properties": {
         "GroupDescription": "Master Internal Load Balancer",
         "VpcId": { "Ref": "Vpc" },
-        "Tags": [ {"Key": "Name", "Value": "ose_internal_elb_master_sg"} ]
+        "Tags": [ {"Key": "Name", "Value": "ose_internal_elb_master_sg"} ],
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": { "Ref": "MasterApiPort" },
+            "ToPort": { "Ref": "MasterApiPort" },
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
       }
     },
     "InfraSG": {
@@ -376,7 +384,7 @@
         "IpProtocol": "tcp",
         "FromPort": "22",
         "ToPort": "22",
-        "CidrIp": "10.121.112.0/20"
+        "CidrIp": "10.121.96.0/20"
       }
     },
     "NodeIngressNodeVXLAN": {
@@ -513,7 +521,8 @@
         "SecurityGroups": [ { "Ref": "MasterIntElbSG" } ],
         "Subnets": [
           {"Ref": "PrivateSubnet1"},
-          {"Ref": "PrivateSubnet2"}
+          {"Ref": "PrivateSubnet2"},
+          {"Ref": "PrivateSubnet3"}
             ],
         "Instances": [
           {"Ref": "Master01"},
@@ -548,10 +557,12 @@
             "Protocol": "TCP"
           }
         ],
+        "Scheme": "internal",
         "SecurityGroups": [ { "Ref": "InfraElbSG" } ],
         "Subnets": [
           {"Ref": "PrivateSubnet1"},
-          {"Ref": "PrivateSubnet2"}
+          {"Ref": "PrivateSubnet2"},
+          {"Ref": "PrivateSubnet3"}
         	],
         "Instances": [
           {"Ref": "InfraRouterNode01"},
@@ -644,24 +655,10 @@
     "Properties" : {
        "BucketName": { "Ref": "S3BucketName"}
                    }
-     },
-   "DNS": {
-   "Type": "AWS::Route53::HostedZone",
-   "Properties": {
-    "HostedZoneConfig": {
-      "Comment": "private hosted zone"
     },
-    "Name": { "Ref": "Route53HostedZone" },
-    "VPCs": [{
-      "VPCId": { "Ref": "Vpc" },
-      "VPCRegion": {"Ref" : "Region" }
-    }]
-  }
-},
     "Route53Records": {
       "Type": "AWS::Route53::RecordSetGroup",
       "DependsOn": [
-        "DNS",
         "InfraElb",
         "MasterIntElb",
         "Master01",
@@ -684,7 +681,7 @@
             "Type": "A",
             "AliasTarget": {
                 "HostedZoneId": { "Fn::GetAtt" : ["InfraElb", "CanonicalHostedZoneNameID"] },
-                "DNSName": { "Fn::GetAtt" : ["InfraElb","CanonicalHostedZoneName"] }
+                "DNSName": { "Fn::GetAtt" : ["InfraElb","DNSName"] }
             }
           },
           {
@@ -694,85 +691,85 @@
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["Master01", "PrivateIp"] }]
           },
           {
-            "Name":  "master02-c01.ocp.dev.frb.aws",
+            "Name":  "master02-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["Master02", "PrivateIp"] }]
           },
           {
-            "Name":  "master03-c01.ocp.dev.frb.aws",
+            "Name":  "master03-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["Master03", "PrivateIp"] }]
           },
           {
-            "Name":  "infrarouter01-c01.ocp.dev.frb.aws",
+            "Name":  "infrarouter01-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRouterNode01", "PrivateIp"] }]
           },
           {
-            "Name":  "infrarouter02-c01.ocp.dev.frb.aws",
+            "Name":  "infrarouter02-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRouterNode02", "PrivateIp"] }]
           },
           {
-            "Name":  "infrarouter03-c01.ocp.dev.frb.aws",
+            "Name":  "infrarouter03-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRouterNode03", "PrivateIp"] }]
           },
           {
-            "Name":  "infraregistry01-c01.ocp.dev.frb.aws",
+            "Name":  "infraregistry01-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRegistryNode01", "PrivateIp"] }]
           },
           {
-            "Name":  "infraregistry02-c01.ocp.dev.frb.aws",
+            "Name":  "infraregistry02-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRegistryNode02", "PrivateIp"] }]
           },
           {
-            "Name":  "infraregistry03-c01.ocp.dev.frb.aws",
+            "Name":  "infraregistry03-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraRegistryNode03", "PrivateIp"] }]
           },
           {
-            "Name":  "infragluster01-c01.ocp.dev.frb.aws",
+            "Name":  "infragluster01-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraGlusterNode01", "PrivateIp"] }]
           },
           {
-            "Name":  "infragluster02-c01.ocp.dev.frb.aws",
+            "Name":  "infragluster02-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraGlusterNode02", "PrivateIp"] }]
           },
           {
-            "Name":  "infragluster03-c01.ocp.dev.frb.aws",
+            "Name":  "infragluster03-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraGlusterNode03", "PrivateIp"] }]
           },
           {
-            "Name":  "app01-c01.ocp.dev.frb.aws",
+            "Name":  "app01-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["AppNode01", "PrivateIp"] }]
           },
           {
-            "Name":  "app02-c01.ocp.dev.frb.aws",
+            "Name":  "app02-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["AppNode02", "PrivateIp"] }]
           },
           {
-            "Name":  "app03-c01.ocp.dev.frb.aws",
+            "Name":  "app03-c01.sbx.ocp.aws.frb.pvt",
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["AppNode03", "PrivateIp"] }]
@@ -792,7 +789,7 @@
           "IamInstanceProfile": { "Ref": "MasterInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "master01-c01.ocp.dev.frb.aws"
+              "Value": "master01-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "master"
@@ -846,7 +843,7 @@
           "IamInstanceProfile": { "Ref": "MasterInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "master02-c01.ocp.dev.frb.aws"
+              "Value": "master02-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "master"
@@ -900,7 +897,7 @@
           "IamInstanceProfile": { "Ref": "MasterInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "master03-c01.ocp.dev.frb.aws"
+              "Value": "master03-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "master"
@@ -954,7 +951,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "infrarouter01-c01.ocp.dev.frb.aws"
+              "Value": "infrarouter01-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "infrarouter"
@@ -1000,7 +997,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "infrarouter02-c01.ocp.dev.frb.aws"
+              "Value": "infrarouter02-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "infrarouter"
@@ -1046,7 +1043,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "infrarouter03-c01.ocp.dev.frb.aws"
+              "Value": "infrarouter03-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "infrarouter"
@@ -1092,7 +1089,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "infraregistry01-c01.ocp.dev.frb.aws"
+              "Value": "infraregistry01-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "infraregistry"
@@ -1138,7 +1135,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "infraregistry02-c01.ocp.dev.frb.aws"
+              "Value": "infraregistry02-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "infraregistry"
@@ -1184,7 +1181,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "infraregistry03-c01.ocp.dev.frb.aws"
+              "Value": "infraregistry03-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "infraregistry"
@@ -1230,7 +1227,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "infragluster01-c01.ocp.dev.frb.aws"
+              "Value": "infragluster01-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "infragluster"
@@ -1284,7 +1281,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "infragluster02-c01.ocp.dev.frb.aws"
+              "Value": "infragluster02-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "infragluster"
@@ -1338,7 +1335,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "infragluster03-c01.ocp.dev.frb.aws"
+              "Value": "infragluster03-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "infragluster"
@@ -1392,7 +1389,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "app01-c01.ocp.dev.frb.aws"
+              "Value": "app01-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "app"
@@ -1438,7 +1435,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "app02-c01.ocp.dev.frb.aws"
+              "Value": "app02-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "app"
@@ -1484,7 +1481,7 @@
 		  "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
           "Tags": [
             { "Key": "Name",
-              "Value": "app03-c01.ocp.dev.frb.aws"
+              "Value": "app03-c01.sbx.ocp.aws.frb.pvt"
             },
             { "Key": "openshift-role",
               "Value": "app"

@@ -127,6 +127,13 @@ If installing OpenShift Container Platform or OpenShift Origin into an existing 
 --github-organization=RHSyseng --github-client-id=3a30415d84720ad14abc
 ```
 
+**OpenShift Container Platform Extended**
+Create a script at the same directory level that ose-on-aws.py called aws_ref_arch_deploy_dev.sh with the following contents
+```
+
+
+```
+
 **OpenShift Origin**
 ```
 ./ose-on-aws.py --create-vpc=no --byo-bastion=yes --keypair=OSE-key --public-hosted-zone=sysdeseng.com \

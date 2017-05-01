@@ -1,0 +1,36 @@
+export AWS_ACCESS_KEY_ID=<insert_access_key_id_here>
+export AWS_SECRET_ACCESS_KEY=<insert_access_key_id_here>
+
+export add_node=no
+installscript="/gitdata/openshift-ansible-contrib/reference-architecture/aws-ansible/ose-on-aws.py"
+
+${installscript} --stack-name=<c##-<env>-ocp-aws-<yourdomain>-pvt --create-vpc=no --region=<yourregion> \
+--ami <yourami> --vpc-id <yourvpc> \
+--vpc-default-nameserver <yourvpcdefaultnameserverip> \
+--private-subnet-id1 <yoursubnet1stAZ> \
+--private-subnet-id2 <yoursubnet2ndAZ> \
+--private-subnet-id3 <yoursubnet3rdAZ> \
+--create-key=no --byo-bastion=yes \
+--public-hosted-zone=<env>.ocp.aws.<yourdomain>.pvt \
+--cluster-shortname=<clustershortname> \
+--master-hostname-01=master01-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--master-hostname-02=master02-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--master-hostname-03=master03-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--app-hostname-01=app01-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--app-hostname-02=app02-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--app-hostname-03=app03-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--infrarouter-hostname-01=infrarouter01-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--infrarouter-hostname-02=infrarouter02-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--infrarouter-hostname-03=infrarouter03-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--infraregistry-hostname-01=infraregistry01-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--infraregistry-hostname-02=infraregistry02-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--infraregistry-hostname-03=infraregistry03-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--infragluster-hostname-01=infragluster01-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--infragluster-hostname-02=infragluster02-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--infragluster-hostname-03=infragluster03-<clustershortname>.<env>.ocp.aws.<yourdomain>.pvt \
+--keypair=<env>.ocp.aws.<yourdomain>.pvt  \
+--sat-bootstrap-rpm=<katello-ca-consumer-rpm> \
+--rhsm-activation-key=ocp3u5_common_nodes \
+--rhsm-org-id=<yourdomain>ocp \
+--rhsm-server-hostname=rhsat.<sharedregionvpc>.aws.<yourdomain>.pvt \
+--rhsm-gluster-activation-key=ocp3u5_gluster_nodes 
